@@ -55,8 +55,7 @@ struct Queue { //Структура, описывающая очередь
 			}
 			delete tmp;
 			curLen--;
-			if (ret->time != 0)
-				time.add(ret->time);
+			time.add(ret->time);
 			return ret;
 		}
 		else
@@ -154,8 +153,8 @@ int main()
 {
 	setlocale(LC_CTYPE, "Russian");
 	NodeQueue que; //Календарь событий
-	Queue queue, queue1; //Очередь заявок
-	CPU proc, proc1; //Обслуживание заявок
+	Queue queue; //Очередь заявок
+	CPU proc; //Обслуживание заявок
 	unsigned int time(0); //Текущее время
 	Event *ev(nullptr);
 	{ //Генерация заявок
@@ -196,18 +195,11 @@ int main()
 				switch (ev->type) { //Обработать в зависимости от типа
 				case 'n':
 					app = new App(ev->param);
-					if (ev->param == 3)
-						queue1.push(app);
-					else
-						queue.push(app);
+					queue.push(app);
 					printf_s("%d\tПоступление заявки типа: %c\n", time, 'a' + ev->param - 1);
 					break;
 				case 'c':
 					proc.state = proc.state - ev->param;
-					printf_s("%d\tЗавершение обработки заявки типа: %c\n", time, 'a' + ev->param - 1);
-					break;
-				case 'p':
-					proc1.state = proc1.state - ev->param;
 					printf_s("%d\tЗавершение обработки заявки типа: %c\n", time, 'a' + ev->param - 1);
 					break;
 				}
@@ -222,7 +214,7 @@ int main()
 						rand_s(&cpuTime); //Генерация времени обслуживания в зависимости от класса заявки
 						switch (desiredCPUState) {
 						case 1:
-							cpuTime = (cpuTime % 11) + 20;
+							cpuTime = (cpuTime % 11) + 15;
 							break;
 						case 2:
 							cpuTime = (cpuTime % 7) + 18;
@@ -238,48 +230,24 @@ int main()
 					else
 						break;
 				}
-				while (queue1.curLen != 0) { //Проверить возможность обслуживания
-					unsigned __int8 desiredCPUState(queue1.end->ptr->type);
-					if ((proc1.state & desiredCPUState) == 0) { //На основе побитового И
-						unsigned int cpuTime;
-						app = queue1.pull();
-						proc1.state = proc1.state + desiredCPUState;
-						printf_s("%d\tНачало обработки заявки типа: %c\n", time, 'a' + desiredCPUState - 1);
-						rand_s(&cpuTime); //Генерация времени обслуживания в зависимости от класса заявки
-						cpuTime = (cpuTime % 11) + 23;
-						proc1.time.add(cpuTime); //Набор данных о времени обслуживания
-						ev = new Event('p', desiredCPUState);
-						que.push(ev, time + cpuTime);
-						delete app;
-					}
-					else
-						break;
-				}
 			}
 			else { //Время события, стоящего первым в очереди, не совпадает с текущим time
 				if (proc.state == 0) //Набор данных о занятости
 					proc.busy.add(0);
 				else
 					proc.busy.add(1);
-				if (proc1.state == 0) //Набор данных о занятости
-					proc1.busy.add(0);
-				else
-					proc1.busy.add(1);
 				queue.length.add(queue.curLen); //Набор данных о длине очереди
 				queue.step(); //Набор данных о времени ожидания
-				queue1.length.add(queue1.curLen); //Набор данных о длине очереди
-				queue1.step(); //Набор данных о времени ожидания
 				time++; //Шаг
 			}
 	}
-	printf_s("\n\t\t\t\t\t\t1\t\t2\n");
-	printf_s("Средняя длина очереди:\t\t\t\t%f\t%f\n", queue.length.mean(), queue1.length.mean());
-	printf_s("Среднее время ожидания заявки в очереди:\t%f\t%f\n", queue.time.mean(), queue1.time.mean());
-	printf_s("Загрузка ЭВМ:\t\t\t\t\t%f\t%f\n", proc.busy.mean(), proc1.busy.mean());
-	printf_s("Средний интервал поступления заявок:\t\t\t%f\n", ro);
-	printf_s("Среднее время обслуживания заявок:\t\t%f\t%f\n", proc.time.mean(), proc1.time.mean());
-	ro = (1 / ro) / (1 / proc.time.mean() + 1 / proc1.time.mean());
-	printf_s("Коэффициент загрузки Ro:\t\t\t\t%f\n", ro);
+	printf_s("\nСредняя длина очереди: %f\n", queue.length.mean());
+	printf_s("Среднее время ожидания заявки в очереди: %f\n", queue.time.mean());
+	printf_s("Загрузка ЭВМ: %f\n", proc.busy.mean());
+	printf_s("Средний интервал поступления заявок: %f\n", ro);
+	printf_s("Среднее время обслуживания заявок: %f\n", proc.time.mean());
+	ro = proc.time.mean() / ro;
+	printf_s("Коэффициент загрузки Ro %f\n", ro);
 	getchar();
 	return 0;
 };
