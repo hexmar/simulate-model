@@ -55,7 +55,8 @@ struct Queue { //Структура, описывающая очередь
 			}
 			delete tmp;
 			curLen--;
-			time.add(ret->time);
+			if (ret->time != 0)
+				time.add(ret->time);
 			return ret;
 		}
 		else
